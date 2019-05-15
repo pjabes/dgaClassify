@@ -1,6 +1,9 @@
 # Mac OSX Artefacts
 .DS_Store
 
+# Model Datasets
+*.csv
+*.txt
 # Logs
 logs
 *.log
