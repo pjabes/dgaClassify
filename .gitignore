@@ -1,6 +1,9 @@
 # Mac OSX Artefacts
 .DS_Store
 
+# VSCode Artefacts
+.vscode 
+
 # Model Datasets
 *.csv
 *.txt

@@ -4,7 +4,6 @@ import random
 import pandas as pd
 import numpy as np
 
-import matplotlib.pyplot as plt
 from keras.preprocessing import sequence
 from keras.models import Sequential
 from keras.layers.core import Dense, Dropout, Activation
@@ -16,39 +15,32 @@ from sklearn.model_selection import train_test_split
 
 
 # Ingesting Benign Domains
-benignDomains_df = pd.read_csv('dataset/CISCO-top-1m.csv', names=['domain'])
+benignDomains_df = pd.read_csv('/Users/pabes/Desktop/dgaClassify/models/datasets/CISCO-top-1m.csv')
 benignDomains_df['class'] = 0
 benignDomains_df['src'] = 'cisco'
 
-# Ingesting Malicious Domains
-maliciousDomains_df = pd.read_csv('dataset/dga-domains.txt', sep='\t', usecols=[0,1], names=['src', 'domain'])
+# # Ingesting Malicious Domains
+maliciousDomains_df = pd.read_csv('/Users/pabes/Desktop/dgaClassify/models/datasets/dga-domains.txt', sep='\t', usecols=[0,1], names=['src', 'domain'])
 maliciousDomains_df['class'] = 1
 
-# Merging Datasets
-domains_df = pd.concat([maliciousDomains_df[0:10000], benignDomains_df[0:10000]], sort=False)
+# # Merging Datasets
+domains_df = pd.concat([maliciousDomains_df[0:200], benignDomains_df[0:200]], sort=False)
 domains_df = domains_df.sample(frac=0.5)
 
 domains_df.head()
-
-
-# ## Neural Network Preprocessing
-
-# ### Generate Character Dictionary
 
 def generate_char_dictionary(dataset):
     """Determines the set of characters within the data """
     
     chars_dict = dict() # Create an empty dict
-    unique_chars = enumerate(set(''.join(dataset)))
-    
-    for i, x in unique_chars: 
+    unique_chars = enumerate(set(''.join(str(dataset))))
+    for i, x in unique_chars:
         chars_dict[x] = i + 1
     
     return chars_dict
 
 chars_dict = generate_char_dictionary(domains_df['domain'])
 max_features = len(chars_dict) + 1
-print(chars_dict)
 
 
 def tokenizeString(domain, chars_dict):
@@ -60,8 +52,7 @@ def tokenizeString(domain, chars_dict):
         tokenList.append(chars_dict[char])
   
     return tokenList
-    
-    
+      
 def padToken(dataset, maxlen):
 
     newList = [0] * maxlen
@@ -135,13 +126,6 @@ history = model.fit(x=tokenList, y=new_Y,
                     validation_steps=None)
 
 
-plt.plot(history.history['acc']) 
-plt.plot(history.history['val_acc']) 
-plt.title('Model accuracy') 
-plt.ylabel('Accuracy') 
-plt.xlabel('Epoch') 
-plt.legend(['Train', 'Test'], loc='upper left') 
-plt.show()
 
 
 def predict(domain, maxlen=maxlen):
