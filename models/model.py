@@ -53,7 +53,7 @@ def build_model(max_features_num, maxlen):
     return model
 
 
-max_epoch=25
+max_epoch=30
 nfolds=10
 batch_size=128
 
@@ -71,13 +71,13 @@ cb.append(EarlyStopping(monitor='val_loss',
 
 
 # Ingesting Benign Domains
-benignDomains_df = pd.read_csv('/Users/pabes/Desktop/dgaClassify/models/datasets/CISCO-top-1m.csv')
+benignDomains_df = pd.read_csv('./datasets/CISCO-top-1m.csv')
 benignDomains_df.rename(columns={'netflix.com': 'domain'}, inplace=True)
 benignDomains_df['class'] = 0
 benignDomains_df['src'] = 'cisco'
 print(benignDomains_df.head())
 # # Ingesting Malicious Domains
-maliciousDomains_df = pd.read_csv('/Users/pabes/Desktop/dgaClassify/models/datasets/dga-domains.txt', sep='\t', usecols=[0,1], names=['src', 'domain'])
+maliciousDomains_df = pd.read_csv('./datasets/dga-domains.txt', sep='\t', usecols=[0,1], names=['src', 'domain'])
 maliciousDomains_df['class'] = 1
 
 
