@@ -1,4 +1,3 @@
-
 import random
 
 import pandas as pd
@@ -14,21 +13,6 @@ from sklearn import feature_extraction
 from sklearn.model_selection import train_test_split
 
 
-# Ingesting Benign Domains
-benignDomains_df = pd.read_csv('/Users/pabes/Desktop/dgaClassify/models/datasets/CISCO-top-1m.csv')
-benignDomains_df['class'] = 0
-benignDomains_df['src'] = 'cisco'
-
-# # Ingesting Malicious Domains
-maliciousDomains_df = pd.read_csv('/Users/pabes/Desktop/dgaClassify/models/datasets/dga-domains.txt', sep='\t', usecols=[0,1], names=['src', 'domain'])
-maliciousDomains_df['class'] = 1
-
-# # Merging Datasets
-domains_df = pd.concat([maliciousDomains_df[0:200], benignDomains_df[0:200]], sort=False)
-domains_df = domains_df.sample(frac=0.5)
-
-domains_df.head()
-
 def generate_char_dictionary(dataset):
     """Determines the set of characters within the data """
     
@@ -38,9 +22,6 @@ def generate_char_dictionary(dataset):
         chars_dict[x] = i + 1
     
     return chars_dict
-
-chars_dict = generate_char_dictionary(domains_df['domain'])
-max_features = len(chars_dict) + 1
 
 
 def tokenizeString(domain, chars_dict):
@@ -57,15 +38,6 @@ def padToken(dataset, maxlen):
 
     newList = [0] * maxlen
     return newList + dataset
-
-domains_df['tokenList'] = domains_df.apply(lambda row: tokenizeString(row['domain'], chars_dict), axis=1)
-domains_df['tokenListLen'] = domains_df['tokenList'].apply(lambda x: len(x))
-
-# Calculate the largest length within the DataFrame
-maxlen = domains_df['tokenListLen'].max()
-
-display(domains_df)
-
 
 def build_model(max_features_num, maxlen):
     """Build LSTM model"""
@@ -96,6 +68,33 @@ cb.append(EarlyStopping(monitor='val_loss',
                         baseline=None, 
                         restore_best_weights=False))
 
+
+
+# Ingesting Benign Domains
+benignDomains_df = pd.read_csv('/Users/pabes/Desktop/dgaClassify/models/datasets/CISCO-top-1m.csv')
+benignDomains_df.rename(columns={'netflix.com': 'domain'}, inplace=True)
+benignDomains_df['class'] = 0
+benignDomains_df['src'] = 'cisco'
+print(benignDomains_df.head())
+# # Ingesting Malicious Domains
+maliciousDomains_df = pd.read_csv('/Users/pabes/Desktop/dgaClassify/models/datasets/dga-domains.txt', sep='\t', usecols=[0,1], names=['src', 'domain'])
+maliciousDomains_df['class'] = 1
+
+
+
+# # Merging Datasets
+domains_df = pd.concat([maliciousDomains_df[0:1000], benignDomains_df[0:1000]], sort=False)
+domains_df = domains_df.sample(frac=0.5)
+
+
+chars_dict = generate_char_dictionary(domains_df['domain'])
+max_features = len(chars_dict) + 1
+
+domains_df['tokenList'] = domains_df.apply(lambda row: tokenizeString(row['domain'], chars_dict), axis=1)
+domains_df['tokenListLen'] = domains_df['tokenList'].apply(lambda x: len(x))
+
+# Calculate the largest length within the DataFrame
+maxlen = domains_df['tokenListLen'].max()
 
 model = build_model(max_features, maxlen)
 
@@ -135,17 +134,19 @@ def predict(domain, maxlen=maxlen):
     
     for char in domain:
         domainToken.append(chars_dict[char])
-    print(domainToken)
 
     tokenList = sequence.pad_sequences([domainToken], maxlen)
     
     result = model.predict_classes(tokenList)[0]
     
     if result == 0:
-        return "benign"
+        return domain + ' - ' + "benign"
     else:
-        return "malicious"
+        return domain + ' - ' + "malicious"
 
 
-predict('geeeeeeeeasswedwcwdcxwdcxwsxseee.com')
+print(predict('ergpojgpokergks.com'))
+print(predict('aaa.com'))
 
+print(predict('sfkjweokfgjwef.com'))
+print(predict('google.com'))
