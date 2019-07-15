@@ -12,6 +12,8 @@ from keras.models import Sequential
 from keras.layers.core import Dense, Dropout, Activation
 from keras.layers.embeddings import Embedding
 from keras.layers.recurrent import LSTM
+from keras.models import model_from_json
+
 import sklearn
 from sklearn import feature_extraction
 from sklearn.model_selection import train_test_split
@@ -88,22 +90,52 @@ def predict(domain, model, chars_dict, maxlen):
 
 
 
-# Ingesting Benign Domains
-benignDomains_df = pd.read_csv('./datasets/CISCO-top-1m.csv')
-benignDomains_df.rename(columns={'netflix.com': 'domain'}, inplace=True)
-benignDomains_df['class'] = 0
-benignDomains_df['src'] = 'cisco'
-print(benignDomains_df.head())
-# # Ingesting Malicious Domains
-maliciousDomains_df = pd.read_csv('./datasets/dga-domains.txt', sep='\t', usecols=[0,1], names=['src', 'domain'])
-maliciousDomains_df['class'] = 1
+def driver():
+    # Ingesting Benign Domains
+    benignDomains_df = pd.read_csv('./datasets/CISCO-top-1m.csv')
+    benignDomains_df.rename(columns={'netflix.com': 'domain'}, inplace=True)
+    benignDomains_df['class'] = 0
+    benignDomains_df['src'] = 'cisco'
+    print(benignDomains_df.head())
+    # # Ingesting Malicious Domains
+    maliciousDomains_df = pd.read_csv('./datasets/dga-domains.txt', sep='\t', usecols=[0,1], names=['src', 'domain'])
+    maliciousDomains_df['class'] = 1
 
-# # Merging Datasets
-domains_df = pd.concat([maliciousDomains_df[0:1000], benignDomains_df[0:1000]], sort=False)
-domains_df = domains_df.sample(frac=0.5)
+    # # Merging Datasets
+    domains_df = pd.concat([maliciousDomains_df[0:1000], benignDomains_df[0:1000]], sort=False)
+    domains_df = domains_df.sample(frac=0.5)
 
-model = train(domains_df)
-print(predict('google.com', model[0], model[1], model[2]))
+    model = train(domains_df)
+    print(predict('google.com', model[0], model[1], model[2]))
 
-def hello_world():
-    print('helo world')
+
+    print('saving model')
+    model_json = model[0].to_json()
+    with open("model.json", "w") as json_file:
+        json_file.write(model_json)
+    
+    print(model[1])
+
+
+    print(model[2])
+    model[0].save_weights("model.h5")
+    print('model saved')
+
+
+def load_model():
+    json_file = open('model.json', 'r')
+    loaded_model_json = json_file.read()
+    json_file.close()
+    loaded_model = model_from_json(loaded_model_json)
+    loaded_model.load_weights("model.h5")
+
+    max_len = 49
+    chars_dict = {'x': 1, '7': 2, 'l': 3, 'z': 4, 'y': 5, ']': 6, 'b': 7, 'v': 8, 'p': 9, '9': 10, '3': 11, '.': 12, '0': 13, '2': 14, '5': 15, ' ': 16, 'g': 17, 'k': 18, '-': 19, '\n': 20, '[': 21, 'f': 22, 'w': 23, 'N': 24, 'c': 25, 'd': 26, '8': 27, '6': 28, 'u': 29, 'm': 30, 'o': 31, 'h': 32, '4': 33, 'e': 34, 'j': 35, 's': 36, '1': 37, 'r': 38, 'i': 39, 'a': 40, 't': 41, 'q': 42, 'n': 43}
+
+    print("Loaded Model from Disk")
+
+    print('Attempting Prediction: ')
+    print(predict('google.com', loaded_model, chars_dict, max_len))
+
+
+load_model()
