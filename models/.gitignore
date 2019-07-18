@@ -1,3 +1,7 @@
+# PyCache
+/__pycache__/*
+
+# Model Information
 model.h5
 model.json
 

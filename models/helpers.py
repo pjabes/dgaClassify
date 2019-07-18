@@ -11,6 +11,55 @@ from sklearn import feature_extraction
 from sklearn.model_selection import train_test_split
 from keras.callbacks import EarlyStopping
 
+def train(df):
+
+    chars_dict = generate_char_dictionary(df)
+    max_features = len(chars_dict) + 1
+
+    df['tokenList'] = df.apply(lambda row: tokenizeString(row['domain'], chars_dict), axis=1)
+    df['tokenListLen'] = df['tokenList'].apply(lambda x: len(x))
+
+    # Calculate the largest length within the DataFrame
+    maxlen = df['tokenListLen'].max()
+
+    model = build_model(max_features, maxlen)
+
+    # model.summary()
+
+    test = df['tokenList'].values.tolist()
+
+
+    tokenList = sequence.pad_sequences(test, maxlen)
+
+    new_X = df['tokenList'].values
+
+    new_Y = df['class'].values
+
+    cb = []
+
+    cb.append(EarlyStopping(monitor='val_loss', 
+                            min_delta=0, #an absolute change of less than min_delta, will count as no improvement
+                            patience=5, #number of epochs with no improvement after which training will be stopped
+                            verbose=0, 
+                            mode='auto', 
+                            baseline=None, 
+                            restore_best_weights=False))
+
+    history = model.fit(x=tokenList, y=new_Y, 
+                        batch_size=128, 
+                        epochs=30, 
+                        verbose=1, 
+                        callbacks=cb, 
+                        validation_split=0.2, #
+                        validation_data=None, 
+                        shuffle=True, 
+                        class_weight=None, 
+                        sample_weight=None, 
+                        initial_epoch=0,
+                        steps_per_epoch=None, 
+                        validation_steps=None)
+    
+    return [model, chars_dict, maxlen]
 
 def generate_char_dictionary(dataset):
     """Determines the set of characters within the data """

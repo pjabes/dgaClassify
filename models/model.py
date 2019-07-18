@@ -15,6 +15,7 @@ from keras.layers.core import Dense, Dropout, Activation
 from keras.layers.embeddings import Embedding
 from keras.layers.recurrent import LSTM
 from keras.models import model_from_json
+from keras import backend as K
 
 import sklearn
 from sklearn import feature_extraction
@@ -26,10 +27,19 @@ from flask import request
 
 app = Flask(__name__)
 
+
+global model
+global maxlen
+global chars_dict
+
+
 first_run = True
+maxlen = None
+chars_dict = {}
+
 
 @app.route('/api/build-model/<size>')
-def my_route(size):
+def build_model(size):
     size = int(size)
 
     if size < 1000:
@@ -72,48 +82,30 @@ def my_route(size):
 
 @app.route('/api/predict/<domain>')
 def predict(domain):
+
+    K.clear_session()
+
+    # Load the Model
+    loaded_model_json = open('model.json', 'r').read()
+    model = model_from_json(loaded_model_json)
+    model.load_weights("model.h5")
+
+    maxlen = int(open('max_length.json', 'r').read())
+    chars_dict = json.loads(open('chars_dict.json', 'r').read())
+
+    domainToken = []
     
+    for char in domain:
+        domainToken.append(chars_dict[char])
 
-    if first_run:
-        # Load the Model
-        loaded_model_json = open('model.json', 'r').read()
-        json_file.close()
-        model = model_from_json(loaded_model_json)
-        model.load_weights("model.h5")
-
-        maxlen = int(open('max_length.json', 'r').read())
-        chars_dict = json.loads(open('chars_dict.json', 'r').read())
-
-        domainToken = []
-        
-        for char in domain:
-            domainToken.append(chars_dict[char])
-
-        tokenList = sequence.pad_sequences([domainToken], maxlen)
-        
-        result = model.predict_classes(tokenList)[0]
-        
-        if result == 0:
-            return domain + ' - ' + "benign"
-        else:
-            return domain + ' - ' + "malicious"
-
-        first_run = False
+    tokenList = sequence.pad_sequences([domainToken], maxlen)
+    
+    result = model.predict_classes(tokenList)[0]
+    
+    if result == 0:
+        return domain + ' - ' + "benign"
     else:
-        domainToken = []
-        
-        for char in domain:
-            domainToken.append(chars_dict[char])
-
-        tokenList = sequence.pad_sequences([domainToken], maxlen)
-        
-        result = model.predict_classes(tokenList)[0]
-        
-        if result == 0:
-            return domain + ' - ' + "benign"
-        else:
-            return domain + ' - ' + "malicious"
-
+        return domain + ' - ' + "malicious"
 
 if __name__ == "__main__":
     app.run()
