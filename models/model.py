@@ -8,6 +8,7 @@ from helpers import train as train
 import pandas as pd
 import numpy as np
 import json 
+import datetime
 
 from keras.preprocessing import sequence
 from keras.models import Sequential
@@ -40,6 +41,9 @@ chars_dict = {}
 
 @app.route('/api/build-model/<size>')
 def build_model(size):
+
+    K.clear_session()
+
     size = int(size)
 
     if size < 1000:
@@ -58,9 +62,6 @@ def build_model(size):
 
     # Train the model with the training data.
     model = train(domains_df)
-
-    chars_dict = model[1]
-
     chars_dict = model[1]
     max_len = model[2]
     model = model[0]
@@ -77,6 +78,9 @@ def build_model(size):
 
     model.save_weights("model.h5")
 
+    with open("version.json", "w") as json_file:
+        json_file.write(str(datetime.datetime.now()))
+
     return('Completed Building Model with size of: ' + str(size))
 
 
@@ -85,7 +89,6 @@ def predict(domain):
 
     K.clear_session()
 
-    # Load the Model
     loaded_model_json = open('model.json', 'r').read()
     model = model_from_json(loaded_model_json)
     model.load_weights("model.h5")
@@ -93,6 +96,7 @@ def predict(domain):
     maxlen = int(open('max_length.json', 'r').read())
     chars_dict = json.loads(open('chars_dict.json', 'r').read())
 
+    version = str(open('version.json', 'r').read())
     domainToken = []
     
     for char in domain:
@@ -103,9 +107,9 @@ def predict(domain):
     result = model.predict_classes(tokenList)[0]
     
     if result == 0:
-        return domain + ' - ' + "benign"
+        return domain + ' - ' + "benign" + ' using model ' + version
     else:
-        return domain + ' - ' + "malicious"
+        return domain + ' - ' + "malicious" + ' using model ' + version
 
 if __name__ == "__main__":
     app.run()
