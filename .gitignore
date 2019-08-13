@@ -10,12 +10,7 @@ env
 # Remove __pycache__
 models/__pycache__/*
 
-# Dataset files
-.csv
-.txt
 
-# Model Datasets
-*.csv
 
 # Logs
 logs

@@ -26,12 +26,7 @@ model.json
 models/__pycache__/*
 
 # Dataset files
-.csv
-.txt
 
-# Model Datasets
-*.csv
-*.txt
 # Logs
 logs
 *.log
