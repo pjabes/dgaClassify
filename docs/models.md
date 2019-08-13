@@ -17,3 +17,16 @@ Alexa provides market research, search engine optimisation and key word analysis
 
 ### Note:
 Many of these datasets and feeds are updated periodically, it may be worth replacing these files within the ```datasets/``` folder.  At this stage there has been no effort to determine the impact of new strains versus those that have already been trained. 
+
+## Character Dictionary
+* Character Dictionary was generated as part of https://en.wikipedia.org/wiki/Percent-encoding#Types_of_URI_characters RFC 3986.  It is created by the use of the characters listed there.
+
+## MaxFeatures
+Should always be the size of the character dictionary.
+
+
+## MaxLength
+Attempted to do the following - resulted in lower accuracy and slower results due to its performance issues. 
+
+Set to the length of the largest Token, we can hard code this knowing that the largest token will always be at most 253 characters from how the DNS system works.
+https://stackoverflow.com/questions/32290167/what-is-the-maximum-length-of-a-dns-nameß
