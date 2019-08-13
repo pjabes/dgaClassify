@@ -17,8 +17,6 @@ from keras.callbacks import EarlyStopping
 from helpers import generate_char_dictionary as generate_char_dictionary
 from helpers import tokenizeString as tokenizeString
 from helpers import padToken as padToken
-from helpers import build_model
-from helpers import train as train
 
 import pandas as pd
 import numpy as np
@@ -44,18 +42,8 @@ from flask import request
 app = Flask(__name__)
 
 
-global model
-global maxlen
-global chars_dict
-
-
-first_run = True
-maxlen = None
-chars_dict = {}
-
-
-@app.route('/api/build-model/<size>')
-def build_model_route(size):
+@app.route('/api/build-model')
+def build_model_route():
     """API route to build and train a model object and save to disk
 
     Arguments:
@@ -65,38 +53,82 @@ def build_model_route(size):
         string -- returns string with the result of the model construction. 
     """
 
-
     K.clear_session()
 
-    size = int(size)
+    # Parameters
+    size = request.args.get('size', default=5000, type=int)
+    patience = request.args.get('patience', default=5, type=int)
+    epochs = request.args.get('epochs', default=10, type=int)
 
     if size < 1000:
-        return('Model datasets are too small.  Suggested size is 1000.')
+        return('Model datasets are too small.  Suggested size is at least 1000.')
     
+    if epochs < 5:
+        return('Model epochs is too small.  Suggested size is at least 30.')
+
     # Load Training Data
-    benignDomains_df = pd.read_csv('./datasets/benign.csv', usecols=[1], names=['domain'])
+    # TODO: Ensure that input data is appropriately sanitized as per RFC 3986
+    benignDomains_df = pd.read_csv('./datasets/benign.csv', usecols=[0])
+    benignDomains_df['domain'] = benignDomains_df['domain'].str.lower()
     benignDomains_df['class'] = 0
-    maliciousDomains_df = pd.read_csv('./datasets/dga.txt', sep='\t', usecols=[0], names=['domain'])
+
+    maliciousDomains_df = pd.read_csv('./datasets/dga.csv', usecols=[0])
+    maliciousDomains_df['domain'] = maliciousDomains_df['domain'].str.lower()
     maliciousDomains_df['class'] = 1
 
     # Randomise training sets and select a **sized** sample
-    benignDomains_df = benignDomains_df.sample(frac=1)
-    maliciousDomains_df = maliciousDomains_df.sample(frac=1)
+    benignDomains_df = benignDomains_df.sample(frac=0.5)
+    maliciousDomains_df = maliciousDomains_df.sample(frac=0.5)
     domains_df = pd.concat([benignDomains_df[0:size], maliciousDomains_df[0:size]], sort=False)
-    print(domains_df.size)
 
-    model = train(domains_df)
+    # Character Dictionary based upon RFC3986
+    max_features = 40
 
-    chars_dict = model[1]
-    max_len = model[2]
-    model = model[0]
+    # Training the Model
+    domains_df['tokenList'] = domains_df.apply(lambda row: tokenizeString(row['domain']), axis=1)
+    domains_df['tokenListLen'] = domains_df['tokenList'].str.len()
+
+    max_len = domains_df['tokenListLen'].max()
+    domainsList = domains_df['tokenList'].values.tolist()
+    tokenList = sequence.pad_sequences(domainsList, max_len)
+    classList = domains_df['class'].values
+
+    # Build Model
+    model = Sequential()
+    model.add(Embedding(40, 64, input_length=max_len))
+    model.add(LSTM(64))
+    model.add(Dropout(0.5))
+    model.add(Dense(1))
+    model.add(Activation('sigmoid'))
+    model.compile(loss='binary_crossentropy', optimizer='rmsprop', metrics=['binary_crossentropy','acc'])
+
+    cb = []
+    cb.append(EarlyStopping(monitor='val_loss', 
+                            min_delta=0, #an absolute change of less than min_delta, will count as no improvement
+                            patience=patience, #number of epochs with no improvement after which training will be stopped
+                            verbose=0, 
+                            mode='auto', 
+                            baseline=None, 
+                            restore_best_weights=False))
+
+    history = model.fit(x=tokenList, y=classList, 
+                        batch_size=128, 
+                        epochs=epochs, 
+                        verbose=1, 
+                        callbacks=cb, 
+                        validation_split=0.2, #
+                        validation_data=None, 
+                        shuffle=True, 
+                        class_weight=None, 
+                        sample_weight=None, 
+                        initial_epoch=0,
+                        steps_per_epoch=None, 
+                        validation_steps=None)
+    
 
     model_json = model.to_json()
     with open("model.json", "w") as json_file:
         json_file.write(model_json)
-
-    with open("chars_dict.json", "w") as json_file:
-        json_file.write(json.dumps(chars_dict))
 
     with open("max_length.json", "w") as json_file:
         json_file.write(str(max_len))
@@ -123,25 +155,27 @@ def predict_route(domain):
 
     if validators.domain(domain):
 
+        K.clear_session()
+
         loaded_model_json = open('model.json', 'r').read()
         model = model_from_json(loaded_model_json)
         model.load_weights("model.h5")
 
         maxlen = int(open('max_length.json', 'r').read())
-        chars_dict = json.loads(open('chars_dict.json', 'r').read())
+        chars_dict = {"1": 1, "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7, "8": 8, "9": 9, "0": 10,
+                      "a": 11, "b": 12, "c": 13, "d": 14, "e": 15, "f": 16, "g": 17, "h": 18, "i": 19,
+                      "j": 20, "k": 21, "l": 22, "m": 23, "n": 24, "o": 25, "p": 26, "q": 27, "r": 28,
+                      "s": 29, "t": 30, "u": 31, "v": 32, "w": 33, "x": 34, "y": 35, "z": 36, "-": 37,
+                      "_": 38, ".": 39, "~": 40}
 
         version = str(open('version.json', 'r').read())
-        domainToken = []
         
-        for char in domain:
-            domainToken.append(chars_dict[char])
+        tokenList = tokenizeString(domain)
 
-        tokenList = sequence.pad_sequences([domainToken], maxlen)
-        
+        tokenList = sequence.pad_sequences([tokenList], maxlen)
+        print(tokenList)
         result = model.predict_classes(tokenList)[0]
         
-        K.clear_session()
-
         if result == 0:
             return domain + ' - ' + "benign" + ' using model ' + version
         else:
@@ -152,4 +186,4 @@ def predict_route(domain):
 
 if __name__ == "__main__":
     print(validators.domain('google.com'))
-    app.run()
+    app.run(debug=True)

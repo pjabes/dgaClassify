@@ -11,56 +11,6 @@ from sklearn import feature_extraction
 from sklearn.model_selection import train_test_split
 from keras.callbacks import EarlyStopping
 
-def train(df):
-
-    chars_dict = generate_char_dictionary(df)
-    max_features = len(chars_dict) + 1
-
-    df['tokenList'] = df.apply(lambda row: tokenizeString(row['domain'], chars_dict), axis=1)
-    df['tokenListLen'] = df['tokenList'].apply(lambda x: len(x))
-
-    # Calculate the largest length within the DataFrame
-    maxlen = df['tokenListLen'].max()
-
-    model = build_model(max_features, maxlen)
-
-    # model.summary()
-
-    test = df['tokenList'].values.tolist()
-
-
-    tokenList = sequence.pad_sequences(test, maxlen)
-
-    new_X = df['tokenList'].values
-
-    new_Y = df['class'].values
-
-    cb = []
-
-    cb.append(EarlyStopping(monitor='val_loss', 
-                            min_delta=0, #an absolute change of less than min_delta, will count as no improvement
-                            patience=5, #number of epochs with no improvement after which training will be stopped
-                            verbose=0, 
-                            mode='auto', 
-                            baseline=None, 
-                            restore_best_weights=False))
-
-    history = model.fit(x=tokenList, y=new_Y, 
-                        batch_size=128, 
-                        epochs=30, 
-                        verbose=1, 
-                        callbacks=cb, 
-                        validation_split=0.2, #
-                        validation_data=None, 
-                        shuffle=True, 
-                        class_weight=None, 
-                        sample_weight=None, 
-                        initial_epoch=0,
-                        steps_per_epoch=None, 
-                        validation_steps=None)
-    
-    return [model, chars_dict, maxlen]
-
 def generate_char_dictionary(dataset):
     """Determines the set of characters within the data """
     
@@ -71,30 +21,25 @@ def generate_char_dictionary(dataset):
     
     return chars_dict
 
-def tokenizeString(domain, chars_dict):
+def tokenizeString(domain):
     """Neural Networks require data to be tokenized as integers to work."""
+    chars_dict = {"1": 1, "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7, "8": 8, "9": 9, "0": 10,
+                  "a": 11, "b": 12, "c": 13, "d": 14, "e": 15, "f": 16, "g": 17, "h": 18, "i": 19,
+                  "j": 20, "k": 21, "l": 22, "m": 23, "n": 24, "o": 25, "p": 26, "q": 27, "r": 28,
+                  "s": 29, "t": 30, "u": 31, "v": 32, "w": 33, "x": 34, "y": 35, "z": 36, "-": 37,
+                  "_": 38, ".": 39, "~": 40}
+
 
     tokenList = []
 
     for char in domain:
         tokenList.append(chars_dict[char])
-  
+        
     return tokenList
 
 def padToken(dataset, maxlen):
 
     newList = [0] * maxlen
+
     return newList + dataset
 
-def build_model(max_features_num, maxlen):
-    """Build LSTM model"""
-    model = Sequential()
-    model.add(Embedding(max_features_num, 64, input_length=maxlen))
-    model.add(LSTM(64))
-    model.add(Dropout(0.5))
-    model.add(Dense(1))
-    model.add(Activation('sigmoid'))
-
-    model.compile(loss='binary_crossentropy', optimizer='rmsprop', metrics=['binary_crossentropy','acc'])
-
-    return model
