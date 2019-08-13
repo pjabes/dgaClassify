@@ -26,7 +26,7 @@ model.json
 models/__pycache__/*
 
 # Dataset files
-
+*.json
 # Logs
 logs
 *.log

@@ -10,8 +10,7 @@ env
 # Remove __pycache__
 models/__pycache__/*
 
-
-
+**.json
 # Logs
 logs
 *.log
@@ -100,3 +99,4 @@ typings/
 
 # DynamoDB Local files
 .dynamodb/
+models/version.json
