@@ -1,6 +1,5 @@
+# Python Virtual Environment
 env
-
-
 
 # Mac OSX Artefacts
 .DS_Store
@@ -17,7 +16,7 @@ models/__pycache__/*
 
 # Model Datasets
 *.csv
-*.txt
+
 # Logs
 logs
 *.log
