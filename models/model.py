@@ -56,6 +56,15 @@ chars_dict = {}
 
 @app.route('/api/build-model/<size>')
 def build_model_route(size):
+    """API route to build and train a model object and save to disk
+
+    Arguments:
+        size {integer} -- represents the size of training datasets.  Symmetric between benign and malicious classes.
+
+    Returns:
+        string -- returns string with the result of the model construction. 
+    """
+
 
     K.clear_session()
 
@@ -102,6 +111,15 @@ def build_model_route(size):
 
 @app.route('/api/predict/<domain>')
 def predict_route(domain):
+    """API route to predict a domain based on the latest model object
+    
+    Arguments:
+        domain {string} -- the suspicious domain represented as a string without protocol or www
+    
+    Returns:
+        string -- results of the prediction or an error
+    """
+
 
     if validators.domain(domain):
 
