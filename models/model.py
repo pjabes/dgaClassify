@@ -185,5 +185,4 @@ def predict_route(domain):
         return(domain + ' is not a valid domain according to RFCs.  Please input a valid domain.')
 
 if __name__ == "__main__":
-    print(validators.domain('google.com'))
     app.run(debug=True)
