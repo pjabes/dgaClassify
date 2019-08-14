@@ -36,9 +36,9 @@ from keras.callbacks import EarlyStopping
 
 from flask import Flask   
 from flask import request
+from flask import jsonify
 
 app = Flask(__name__)
-
 
 @app.route('/api/build-model')
 def build_model_route():
@@ -59,10 +59,10 @@ def build_model_route():
     epochs = request.args.get('epochs', default=10, type=int)
 
     if size < 1000:
-        return('Model datasets are too small.  Suggested size is at least 1000.')
+        return jsonify({'error': 'Selected model dataset is too small.  Suggested size is at least 1000.'})
     
     if epochs < 5:
-        return('Model epochs is too small.  Suggested size is at least 30.')
+        return jsonify({'error': 'Model epochs value is too small.  Suggested size is at least 5.'})
 
     # Load Training Data
     # TODO: Ensure that input data is appropriately sanitized as per RFC 3986
@@ -136,8 +136,7 @@ def build_model_route():
     with open("version.json", "w") as json_file:
         json_file.write(str(datetime.datetime.now()))
 
-    return('Completed Building Model with size of: ' + str(size))
-
+    return jsonify({"success": "Model built and saved"})
 
 @app.route('/api/predict/<domain>')
 def predict_route(domain):
@@ -167,12 +166,12 @@ def predict_route(domain):
         result = model.predict_classes(tokenList)[0]
         
         if result == 0:
-            return domain + ' - ' + "benign" + ' using model ' + version
+            return jsonify({"domain": domain, "classification": "benign", "version": version})
         else:
-            return domain + ' - ' + "malicious" + ' using model ' + version
+            return jsonify({"domain": domain, "classification": "dga", "version": version})
             
     else:
-        return(domain + ' is not a valid domain according to RFCs.  Please input a valid domain.')
+        return jsonify({"error": "Domain is not a valid domain.  Please use a different domain"})
 
 if __name__ == "__main__":
     app.run(debug=True)

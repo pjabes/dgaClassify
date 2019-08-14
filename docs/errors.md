@@ -1,0 +1,1 @@
+https://nordicapis.com/best-practices-api-error-handling/
