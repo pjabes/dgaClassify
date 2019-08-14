@@ -14,9 +14,7 @@ from sklearn import feature_extraction
 from sklearn.model_selection import train_test_split
 from keras.callbacks import EarlyStopping
 
-from helpers import generate_char_dictionary as generate_char_dictionary
 from helpers import tokenizeString as tokenizeString
-from helpers import padToken as padToken
 
 import pandas as pd
 import numpy as np
@@ -160,20 +158,12 @@ def predict_route(domain):
         loaded_model_json = open('model.json', 'r').read()
         model = model_from_json(loaded_model_json)
         model.load_weights("model.h5")
-
         maxlen = int(open('max_length.json', 'r').read())
-        chars_dict = {"1": 1, "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7, "8": 8, "9": 9, "0": 10,
-                      "a": 11, "b": 12, "c": 13, "d": 14, "e": 15, "f": 16, "g": 17, "h": 18, "i": 19,
-                      "j": 20, "k": 21, "l": 22, "m": 23, "n": 24, "o": 25, "p": 26, "q": 27, "r": 28,
-                      "s": 29, "t": 30, "u": 31, "v": 32, "w": 33, "x": 34, "y": 35, "z": 36, "-": 37,
-                      "_": 38, ".": 39, "~": 40}
-
         version = str(open('version.json', 'r').read())
         
         tokenList = tokenizeString(domain)
-
         tokenList = sequence.pad_sequences([tokenList], maxlen)
-        print(tokenList)
+        print(model.predict_classes(tokenList))
         result = model.predict_classes(tokenList)[0]
         
         if result == 0:
