@@ -13,7 +13,7 @@ import sklearn
 from sklearn import feature_extraction
 from sklearn.model_selection import train_test_split
 from keras.callbacks import EarlyStopping
-
+import tensorflow as tf
 from helpers import tokenizeString as tokenizeString
 
 import pandas as pd
@@ -39,6 +39,8 @@ from flask import request
 from flask import jsonify
 
 app = Flask(__name__)
+
+tf.logging.set_verbosity(tf.logging.ERROR)
 
 @app.route('/api/build-model')
 def build_model_route():
@@ -95,7 +97,7 @@ def build_model_route():
     model = Sequential()
     model.add(Embedding(40, 64, input_length=max_len))
     model.add(LSTM(64))
-    model.add(Dropout(0.5))
+    model.add(Dropout(rate=0.5))
     model.add(Dense(1))
     model.add(Activation('sigmoid'))
     model.compile(loss='binary_crossentropy', optimizer='rmsprop', metrics=['binary_crossentropy','acc'])
@@ -165,7 +167,6 @@ def predict_route(domain):
         
         tokenList = tokenizeString(domain)
         tokenList = sequence.pad_sequences([tokenList], maxlen)
-        print(model.predict_classes(tokenList))
         result = model.predict_classes(tokenList)[0]
         
         if result == 0:
