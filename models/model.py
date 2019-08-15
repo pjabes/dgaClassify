@@ -126,8 +126,8 @@ def build_model_route():
     accuracy = history.history['acc'][-1]
     version = datetime.datetime.now()
 
-
     model_json = model.to_json()
+
     with open("saved-models/model.json", "w") as json_file:
         json_file.write(model_json)
 
