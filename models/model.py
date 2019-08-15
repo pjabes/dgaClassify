@@ -123,6 +123,7 @@ def build_model_route():
                         steps_per_epoch=None, 
                         validation_steps=None)
     
+    accuracy = history.history['acc'][-1]
 
     model_json = model.to_json()
     with open("model.json", "w") as json_file:
@@ -136,7 +137,7 @@ def build_model_route():
     with open("version.json", "w") as json_file:
         json_file.write(str(datetime.datetime.now()))
 
-    return jsonify({"success": "Model built and saved"})
+    return jsonify({"success": "Model built and saved", "acc": accuracy})
 
 @app.route('/api/predict/<domain>')
 def predict_route(domain):
