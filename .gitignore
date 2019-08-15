@@ -100,3 +100,4 @@ typings/
 # DynamoDB Local files
 .dynamodb/
 models/version.json
+models/saved-models/max_length.json
