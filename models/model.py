@@ -124,20 +124,22 @@ def build_model_route():
                         validation_steps=None)
     
     accuracy = history.history['acc'][-1]
+    version = datetime.datetime.now()
+
 
     model_json = model.to_json()
-    with open("model.json", "w") as json_file:
+    with open("saved-models/model.json", "w") as json_file:
         json_file.write(model_json)
 
-    with open("max_length.json", "w") as json_file:
+    with open("saved-models/max_length.json", "w") as json_file:
         json_file.write(str(max_len))
 
-    model.save_weights("model.h5")
+    model.save_weights("saved-models/model.h5")
 
-    with open("version.json", "w") as json_file:
-        json_file.write(str(datetime.datetime.now()))
+    with open("saved-models/version.json", "w") as json_file:
+        json_file.write(str(version))
 
-    return jsonify({"success": "Model built and saved", "acc": accuracy})
+    return jsonify({"success": "Model built and saved", "acc": accuracy, "version": version, "epochs": epochs, "size": size, "patience": patience})
 
 @app.route('/api/predict/<domain>')
 def predict_route(domain):
@@ -155,11 +157,11 @@ def predict_route(domain):
 
         K.clear_session()
 
-        loaded_model_json = open('model.json', 'r').read()
+        loaded_model_json = open('saved-models/model.json', 'r').read()
         model = model_from_json(loaded_model_json)
-        model.load_weights("model.h5")
-        maxlen = int(open('max_length.json', 'r').read())
-        version = str(open('version.json', 'r').read())
+        model.load_weights("saved-models/model.h5")
+        maxlen = int(open('saved-models/max_length.json', 'r').read())
+        version = str(open('saved-models/version.json', 'r').read())
         
         tokenList = tokenizeString(domain)
         tokenList = sequence.pad_sequences([tokenList], maxlen)
