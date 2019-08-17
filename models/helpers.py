@@ -1,3 +1,5 @@
+from keras.preprocessing import sequence
+
 def tokenizeString(domain):
     """Neural Networks require data to be tokenized as integers to work."""
     chars_dict = {"1": 1, "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7, "8": 8, "9": 9, "0": 10,
@@ -13,3 +15,6 @@ def tokenizeString(domain):
         
     return tokenList
 
+def padSequence(tokenList, max_len):
+
+    return sequence.pad_sequences([tokenList], max_len)

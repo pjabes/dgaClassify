@@ -15,6 +15,7 @@ from sklearn.model_selection import train_test_split
 from keras.callbacks import EarlyStopping
 import tensorflow as tf
 from helpers import tokenizeString as tokenizeString
+from helpers import padSequence as padSequence
 
 import pandas as pd
 import numpy as np
@@ -176,6 +177,30 @@ def predict_route(domain):
             
     else:
         return jsonify({"error": "Domain is not a valid domain.  Please use a different domain"})
+
+@app.route('/api/batch_predict', methods=['GET', 'POST'])
+def batch_predict_route():
+
+    if request.method == 'POST':
+        f = request.files['file']
+        df = pd.read_csv(f)
+
+        K.clear_session()
+
+        loaded_model_json = open('saved-models/model.json', 'r').read()
+        model = model_from_json(loaded_model_json)
+        model.load_weights("saved-models/model.h5")
+        maxlen = int(open('saved-models/max_length.json', 'r').read())
+        version = str(open('saved-models/version.json', 'r').read())
+
+        df['tokenList'] = df.apply(lambda row: tokenizeString(row['domain']), axis=1)     
+        df['paddedSequence'] = df.apply(lambda row: padSequence(row['tokenList'], maxlen), axis=1)   
+        df['prediction'] = df.apply(lambda row: model.predict_classes(row['paddedSequence'])[0][0], axis=1).astype(str)
+        df['prediction'] = df['prediction'].str.replace('0', 'benign')
+        df['prediction'] = df['prediction'].str.replace('1', 'dga')
+
+        df = df[['domain', 'prediction']]
+        return df.to_json(orient='index')
 
 if __name__ == "__main__":
     app.run(debug=True)
